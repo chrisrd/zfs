@@ -576,7 +576,14 @@ zap_deref_leaf(zap_t *zap, uint64_t h, dmu_tx_t *tx, krw_t lt, zap_leaf_t **lp)
 
 	ASSERT(zap->zap_dbuf == NULL ||
 	    zap->zap_f.zap_phys == zap->zap_dbuf->db_data);
-	ASSERT3U(zap->zap_f.zap_phys->zap_magic, ==, ZAP_MAGIC);
+	if (zap->zap_f.zap_phys->zap_magic != ZAP_MAGIC) {
+		zfs_panic_recover("zfs: "
+			"zap->zap_u.zap_fat.zap_phys->zap_magic == 0x2F52AB2ABULL "
+			"failed (%lu == %lu) for object %lu",
+			zap->zap_u.zap_fat.zap_phys->zap_magic, 0x2F52AB2ABULL
+			zap->zap_object);
+		return (EFAULT);
+	}
 	idx = ZAP_HASH_IDX(h, zap->zap_f.zap_phys->zap_ptrtbl.zt_shift);
 	err = zap_idx_to_blk(zap, idx, &blk);
 	if (err != 0)

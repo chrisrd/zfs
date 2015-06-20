@@ -1161,6 +1161,22 @@ zfs_sb_teardown(zfs_sb_t *zsb, boolean_t unmounting)
 		 */
 		int round = 0;
 		while (zsb->z_nr_znodes > 0) {
+
+			printk(KERN_WARNING "zfs_sb_teardown: unmounting=%d, "
+			    "round %d, z_nr_znodes=%llu\n", unmounting, round,
+			    zsb->z_nr_znodes);
+			mutex_enter(&zsb->z_znodes_lock);
+			for (zp = list_head(&zsb->z_all_znodes); zp != NULL;
+			zp = list_next(&zsb->z_all_znodes, zp)) {
+				printk(KERN_WARNING "zfs_sb_teardown: "
+				"z_all_znodes contains i_ino=%lu, i_mode=0%o, "
+				"i_state=0x%lx, z_xattr_parent=%d\n",
+				zp->z_inode.i_ino, zp->z_inode.i_mode,
+				zp->z_inode.i_state,
+				zp->z_xattr_parent ? 1 : 0);
+			}
+			mutex_exit(&zsb->z_znodes_lock);
+
 			taskq_wait_outstanding(dsl_pool_iput_taskq(
 			    dmu_objset_pool(zsb->z_os)), 0);
 			if (++round > 1 && !unmounting)
